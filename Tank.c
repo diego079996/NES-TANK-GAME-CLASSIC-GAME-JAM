@@ -24,8 +24,8 @@
 #include "vrambuf.h"
 //#link "vrambuf.c"
 
-extern const byte climbr_title_pal[16];
-extern const byte tankgame_rle[];
+extern const byte climbr_titles_pal[16];
+extern const byte tankgames_rle[];
 
 
 #define TILE 0xd8
@@ -111,7 +111,7 @@ void main(void)
   }
   // draw message  
   // enable rendering
-   show_title_screen(climbr_title_pal, tankgame_rle);
+   show_title_screen(climbr_titles_pal, tankgames_rle);
   // infinite loop
   while(1) {
    
