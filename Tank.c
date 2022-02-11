@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <stdlib.h>
-#include <string.h>
-
 // include NESLIB header
 #include "neslib.h"
 
@@ -27,26 +24,22 @@ extern const byte climbr_titles_pal[16];
 extern const byte tankgames_rle[];
 
 
-#define TILE 0xd8
-#define ATTR 0x0
-
-
 
 #define DEF_METASPRITE_2x2(name,code,pal)\
 const unsigned char name[]={\
-        0,      0,      (code)+0,   pal, \
-        0,      8,      (code)+1,   pal, \
-        8,      0,      (code)+2,   pal, \
-        8,      8,      (code)+3,   pal, \
+        0,      0,      (code)+37,   pal, \
+        0,      8,      (code)+37,   pal, \
+        8,      0,      (code)+37,   pal, \
+        8,      8,      (code)+37,   pal, \
         128};
 
 // define a 2x2 metasprite, flipped horizontally
 #define DEF_METASPRITE_2x2_FLIP(name,code,pal)\
 const unsigned char name[]={\
-        8,      0,      (code)+0,   (pal)|OAM_FLIP_H, \
-        8,      8,      (code)+1,   (pal)|OAM_FLIP_H, \
-        0,      0,      (code)+2,   (pal)|OAM_FLIP_H, \
-        0,      8,      (code)+3,   (pal)|OAM_FLIP_H, \
+        8,      0,      (code)+37,   (pal)|OAM_FLIP_H, \
+        8,      8,      (code)+37,   (pal)|OAM_FLIP_H, \
+        0,      0,      (code)+37,   (pal)|OAM_FLIP_H, \
+        0,      8,      (code)+37,   (pal)|OAM_FLIP_H, \
         128};
 
 
@@ -93,8 +86,21 @@ const char PALETTE[32] = {
   0x0d,0x27,0x2a	// sprite palette 3
 };
 
-void fade_in() {
+
+
+void show_title_screen(const byte* pal, const byte* rle) {
+  // disable rendering
   byte vb;
+  ppu_off();
+  // set palette, virtual bright to 0 (total black)
+  pal_bg(pal);
+  pal_bright(0);
+  // unpack nametable into the VRAM
+  vram_adr(0x2000);
+  vram_unrle(rle);
+  // enable rendering
+  ppu_on_all();
+  // fade in from black
   for (vb=0; vb<=4; vb++) {
     // set virtual bright value
     pal_bright(vb);
@@ -106,21 +112,6 @@ void fade_in() {
   }
 }
 
-void show_title_screen(const byte* pal, const byte* rle) {
-  // disable rendering
-  ppu_off();
-  // set palette, virtual bright to 0 (total black)
-  pal_bg(pal);
-  pal_bright(0);
-  // unpack nametable into the VRAM
-  vram_adr(0x2000);
-  vram_unrle(rle);
-  // enable rendering
-  ppu_on_all();
-  // fade in from black
-  fade_in();
-}
-
 // setup PPU and tables
 void setup_graphics() {
   // clear sprites
@@ -130,7 +121,7 @@ void setup_graphics() {
   // turn on PPU
   ppu_on_all();
 }
-#define NUM_ACTORS 16
+#define NUM_ACTORS 2
 
 // actor x/y positions
 byte actor_x[NUM_ACTORS];
@@ -138,7 +129,7 @@ byte actor_y[NUM_ACTORS];
 // actor x/y deltas per frame (signed)
 sbyte actor_dx[NUM_ACTORS];
 sbyte actor_dy[NUM_ACTORS];
-void main(void)
+void main()
 {
   char i;	// actor index
   //char j;     // actor 2 index
@@ -147,8 +138,7 @@ void main(void)
   char pad;	// controller flags
   
   // print instructions
-  vram_adr(NTADR_A(2,2));
-  vram_write("\x1c\x1d\x1e\x1f to move metasprite", 24);
+
   // setup graphics
   setup_graphics();
    for (i=0; i<NUM_ACTORS; i++) {
@@ -179,7 +169,7 @@ void main(void)
     }
     // draw and move all actors
     for (i=0; i<NUM_ACTORS; i++) {
-      byte runseq = actor_x[i] & 7;
+      byte runseq = actor_x[i] & 6;
       if (actor_dx[i] >= 0)
         runseq += 8;
       oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, playerRunSeq[runseq]);
