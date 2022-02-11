@@ -1,5 +1,4 @@
 
-//#link "tankgame.s"
 
 #include <stdlib.h>
 #include <string.h>
