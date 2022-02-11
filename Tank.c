@@ -32,13 +32,51 @@ extern const byte tankgames_rle[];
 
 
 
-
-const unsigned char metasprite[]={
-        0,      0,      TILE+0,   ATTR, 
-        0,      8,      TILE+1,   ATTR, 
-        8,      0,      TILE+2,   ATTR, 
-        8,      8,      TILE+3,   ATTR, 
+#define DEF_METASPRITE_2x2(name,code,pal)\
+const unsigned char name[]={\
+        0,      0,      (code)+0,   pal, \
+        0,      8,      (code)+1,   pal, \
+        8,      0,      (code)+2,   pal, \
+        8,      8,      (code)+3,   pal, \
         128};
+
+// define a 2x2 metasprite, flipped horizontally
+#define DEF_METASPRITE_2x2_FLIP(name,code,pal)\
+const unsigned char name[]={\
+        8,      0,      (code)+0,   (pal)|OAM_FLIP_H, \
+        8,      8,      (code)+1,   (pal)|OAM_FLIP_H, \
+        0,      0,      (code)+2,   (pal)|OAM_FLIP_H, \
+        0,      8,      (code)+3,   (pal)|OAM_FLIP_H, \
+        128};
+
+
+DEF_METASPRITE_2x2(playerRStand, 0xd8, 0);
+DEF_METASPRITE_2x2(playerRRun1, 0xdc, 0);
+DEF_METASPRITE_2x2(playerRRun2, 0xe0, 0);
+DEF_METASPRITE_2x2(playerRRun3, 0xe4, 0);
+DEF_METASPRITE_2x2(playerRJump, 0xe8, 0);
+DEF_METASPRITE_2x2(playerRClimb, 0xec, 0);
+DEF_METASPRITE_2x2(playerRSad, 0xf0, 0);
+
+DEF_METASPRITE_2x2_FLIP(playerLStand, 0xd8, 0);
+DEF_METASPRITE_2x2_FLIP(playerLRun1, 0xdc, 0);
+DEF_METASPRITE_2x2_FLIP(playerLRun2, 0xe0, 0);
+DEF_METASPRITE_2x2_FLIP(playerLRun3, 0xe4, 0);
+DEF_METASPRITE_2x2_FLIP(playerLJump, 0xe8, 0);
+DEF_METASPRITE_2x2_FLIP(playerLClimb, 0xec, 0);
+DEF_METASPRITE_2x2_FLIP(playerLSad, 0xf0, 0);
+
+DEF_METASPRITE_2x2(personToSave, 0xba, 1);
+
+const unsigned char* const playerRunSeq[16] = {
+  playerLRun1, playerLRun2, playerLRun3, 
+  playerLRun1, playerLRun2, playerLRun3, 
+  playerLRun1, playerLRun2,
+  playerRRun1, playerRRun2, playerRRun3, 
+  playerRRun1, playerRRun2, playerRRun3, 
+  playerRRun1, playerRRun2,
+};
+
 
 /*{pal:"nes",layout:"nes"}*/
 const char PALETTE[32] = { 
@@ -100,39 +138,57 @@ sbyte actor_dx[NUM_ACTORS];
 sbyte actor_dy[NUM_ACTORS];
 void main(void)
 {
-  byte i;
+  char i;	// actor index
+  //char j;     // actor 2 index
+  char oam_id;// sprite ID
+  //char oam_id2;
+  char pad;	// controller flags
+  
+  // print instructions
+  vram_adr(NTADR_A(2,2));
+  vram_write("\x1c\x1d\x1e\x1f to move metasprite", 24);
+  // setup graphics
   setup_graphics();
-  for (i=0; i<NUM_ACTORS; i++) {
-    actor_x[i] = i*8;
-    actor_y[i] = i*8;
-    actor_dx[i] =  15;
-    actor_dy[i] = 15;
+   for (i=0; i<NUM_ACTORS; i++) {
+    actor_x[i] = i*32+128;
+    actor_y[i] = i*8+64;
+    actor_dx[i] = 0;
+    actor_dy[i] = 0;
   }
   // draw message  
   // enable rendering
    show_title_screen(climbr_titles_pal, tankgames_rle);
   // infinite loop
   while(1) {
-   
-    oam_off = 0;
+   // start with OAMid/sprite 0
+    oam_id = 0;
+    // set player 0/1 velocity based on controller
+    for (i=0; i<2; i++) {
+      // poll controller i (0-1)
+      pad = pad_poll(i);
+      // move actor[i] left/right
+      if (pad&PAD_LEFT && actor_x[i]>0) actor_dx[i]=-2;
+      else if (pad&PAD_RIGHT && actor_x[i]<240) actor_dx[i]=2;
+      else actor_dx[i]=0;
+      // move actor[i] up/down
+      if (pad&PAD_UP && actor_y[i]>0) actor_dy[i]=-2;
+      else if (pad&PAD_DOWN && actor_y[i]<212) actor_dy[i]=2;
+      else actor_dy[i]=0;
+    }
     // draw and move all actors
-    // (note we don't reset i each loop iteration)
-    while (oam_off < 256-4*4) {
-       
-      // advance and wrap around actor array
-      if (++i >= NUM_ACTORS)
-        i -= NUM_ACTORS;
-      // draw and move actor
-      oam_meta_spr_pal(
-        actor_x[3],	// add x+dx and pass param
-        actor_y[1],	// add y+dy and pass param
-        i&7,				// palette color
-        metasprite);
-  }
-     oam_hide_rest(oam_off);
-    // wait for next NMI
-    // we don't want to skip frames b/c it makes flicker worse
-    ppu_wait_nmi();
+    for (i=0; i<NUM_ACTORS; i++) {
+      byte runseq = actor_x[i] & 7;
+      if (actor_dx[i] >= 0)
+        runseq += 8;
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, playerRunSeq[runseq]);
+      actor_x[i] += actor_dx[i];
+      actor_y[i] += actor_dy[i];
+    }
+    // hide rest of sprites
+    // if we haven't wrapped oam_id around to 0
+    if (oam_id!=0) oam_hide_rest(oam_id);
+    // wait for next frame
+    ppu_wait_frame();
   }
 }
 
