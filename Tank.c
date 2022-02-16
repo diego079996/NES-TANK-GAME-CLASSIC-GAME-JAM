@@ -70,6 +70,13 @@ const unsigned char* const playerRunSeq[16] = {
   playerRRun1, playerRRun2,
 };
 
+const unsigned char tankSprite1[]={
+  0,0,0xd8,0,
+  8,0,0xd9,0,
+  0,8,0xd8,OAM_FLIP_V,
+  8,8,0xd9,OAM_FLIP_V,
+  128};
+
 
 /*{pal:"nes",layout:"nes"}*/
 const char PALETTE[32] = { 
@@ -172,7 +179,7 @@ void main()
       byte runseq = actor_x[i] & 6;
       if (actor_dx[i] >= 0)
         runseq += 8;
-      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, playerRunSeq[runseq]);
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, tankSprite1);//playerRunSeq[runseq]);
       actor_x[i] += actor_dx[i];
       actor_y[i] += actor_dy[i];
     }
