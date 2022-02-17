@@ -70,11 +70,32 @@ const unsigned char* const playerRunSeq[16] = {
   playerRRun1, playerRRun2,
 };
 
-const unsigned char tankSprite1[]={
+const unsigned char tankSpriteR[]={
   0,0,0xd8,0,
   8,0,0xd9,0,
   0,8,0xd8,OAM_FLIP_V,
   8,8,0xd9,OAM_FLIP_V,
+  128};
+
+const unsigned char tankSpriteL[]={
+  0,0,0xd9,OAM_FLIP_H,
+  8,0,0xd8,OAM_FLIP_H,
+  0,8,0xd9,OAM_FLIP_H|OAM_FLIP_V,
+  8,8,0xd8,OAM_FLIP_H|OAM_FLIP_V,
+  128};
+
+const unsigned char tankSpriteT[]={
+  0,0,0xdd,0,
+  0,8,0xdc,0,
+  8,0,0xdd,OAM_FLIP_H,
+  8,8,0xdc,OAM_FLIP_H,
+  128};
+
+const unsigned char tankSpriteB[]={
+  0,0,0xdc,OAM_FLIP_V,
+  0,8,0xdd,OAM_FLIP_V,
+  8,0,0xdc,OAM_FLIP_V|OAM_FLIP_H,
+  8,8,0xdd,OAM_FLIP_V|OAM_FLIP_H,
   128};
 
 
@@ -179,7 +200,7 @@ void main()
       byte runseq = actor_x[i] & 6;
       if (actor_dx[i] >= 0)
         runseq += 8;
-      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, tankSprite1);//playerRunSeq[runseq]);
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, tankSpriteB);//playerRunSeq[runseq]);
       actor_x[i] += actor_dx[i];
       actor_y[i] += actor_dy[i];
     }
