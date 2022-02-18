@@ -43,6 +43,24 @@ const unsigned char name[]={\
         128};
 
 
+#define DEF_METASPRITE_TANK_H(name,code1,code2,flip)\
+const unsigned char name[]={\
+	0,0,(code1),(flip<<6),\
+        8,0,(code2),(flip<<6),\
+        0,8,(code1),(flip<<6)|OAM_FLIP_V,\
+        8,8,(code2),(flip<<6)|OAM_FLIP_V,\
+        128};
+
+#define DEF_METASPRITE_TANK_V(name,code1,code2,flip)\
+const unsigned char name[]={\
+	0,8,(code1),(flip<<7),\
+        0,0,(code2),(flip<<7),\
+        8,8,(code1),(flip<<7)|OAM_FLIP_H,\
+        8,0,(code2),(flip<<7)|OAM_FLIP_H,\
+        128};
+
+
+
 DEF_METASPRITE_2x2(playerRStand, 0xd8, 0);
 DEF_METASPRITE_2x2(playerRRun1, 0xdc, 0);
 DEF_METASPRITE_2x2(playerRRun2, 0xe0, 0);
@@ -70,33 +88,23 @@ const unsigned char* const playerRunSeq[16] = {
   playerRRun1, playerRRun2,
 };
 
-const unsigned char tankSpriteR[]={
-  0,0,0xd8,0,
-  8,0,0xd9,0,
-  0,8,0xd8,OAM_FLIP_V,
-  8,8,0xd9,OAM_FLIP_V,
-  128};
+DEF_METASPRITE_TANK_H(tankSpriteR1,0xd8,0xd9,0);
+DEF_METASPRITE_TANK_H(tankSpriteR2,0xda,0xdb,0);
+DEF_METASPRITE_TANK_H(tankSpriteL1,0xd9,0xd8,1);
+DEF_METASPRITE_TANK_H(tankSpriteL2,0xdb,0xda,1);
 
-const unsigned char tankSpriteL[]={
-  0,0,0xd9,OAM_FLIP_H,
-  8,0,0xd8,OAM_FLIP_H,
-  0,8,0xd9,OAM_FLIP_H|OAM_FLIP_V,
-  8,8,0xd8,OAM_FLIP_H|OAM_FLIP_V,
-  128};
+DEF_METASPRITE_TANK_V(tankSpriteT1,0xdc,0xdd,0);
+DEF_METASPRITE_TANK_V(tankSpriteT2,0xde,0xdf,0);
+DEF_METASPRITE_TANK_V(tankSpriteB1,0xdd,0xdc,1);
+DEF_METASPRITE_TANK_V(tankSpriteB2,0xdf,0xde,1);
 
-const unsigned char tankSpriteT[]={
-  0,0,0xdd,0,
-  0,8,0xdc,0,
-  8,0,0xdd,OAM_FLIP_H,
-  8,8,0xdc,OAM_FLIP_H,
-  128};
+const unsigned char* const playerTankSeq[8] = {
+  tankSpriteR1,tankSpriteR2,
+  tankSpriteL1,tankSpriteL2,
+  tankSpriteT1,tankSpriteT2,
+  tankSpriteB1,tankSpriteB2
+};
 
-const unsigned char tankSpriteB[]={
-  0,0,0xdc,OAM_FLIP_V,
-  0,8,0xdd,OAM_FLIP_V,
-  8,0,0xdc,OAM_FLIP_V|OAM_FLIP_H,
-  8,8,0xdd,OAM_FLIP_V|OAM_FLIP_H,
-  128};
 
 
 /*{pal:"nes",layout:"nes"}*/
@@ -199,8 +207,8 @@ void main()
     for (i=0; i<NUM_ACTORS; i++) {
       byte runseq = actor_x[i] & 6;
       if (actor_dx[i] >= 0)
-        runseq += 8;
-      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, tankSpriteB);//playerRunSeq[runseq]);
+        runseq += 1;
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, playerTankSeq[runseq]);
       actor_x[i] += actor_dx[i];
       actor_y[i] += actor_dy[i];
     }
