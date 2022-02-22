@@ -1,4 +1,6 @@
 
+#include "Tanktitles.h"
+
 //#link "tankgame.s"
 #include <stdlib.h>
 #include <string.h>
@@ -20,9 +22,40 @@
 #include "vrambuf.h"
 //#link "vrambuf.c"
 
+const unsigned char palTitle[16]={ 0x0f,0x08,0x1A,0x2A,0x0f,0x08,0x1a,0x2a,0x0f,0x06,0x16,0x26,0x0f,0x09,0x19,0x29 };
+
+
 extern const byte climbr_titles_pal[16];
 extern const byte tankgames_rle[];
 
+#define BLANK 0
+
+//game uses 12:4 fixed point calculations for enemy movements
+
+#define FP_BITS  4
+
+//max size of the game map
+
+#define MAP_WDT      16
+#define MAP_WDT_BIT    4
+#define MAP_HGT      13
+
+//macro for calculating map offset from screen space, as
+//the map size is smaller than screen to save some memory
+
+#define MAP_ADR(x,y)  ((((y)-2)<<MAP_WDT_BIT)|(x))
+
+//size of a map tile
+
+#define TILE_SIZE    16
+#define TILE_SIZE_BIT  4
+
+
+#define DIR_NONE    0
+#define DIR_LEFT    PAD_LEFT
+#define DIR_RIGHT    PAD_RIGHT
+#define DIR_UP      PAD_UP
+#define DIR_DOWN    PAD_DOWN
 
 
 #define DEF_METASPRITE_2x2(name,code,pal)\
@@ -59,6 +92,14 @@ const unsigned char name[]={\
         8,0,(code2),(flip<<7)|OAM_FLIP_H,\
         128};
 
+void clrscr() {
+  vrambuf_clear();
+  ppu_off();
+  vram_adr(NAMETABLE_A);
+  vram_fill(BLANK, 32*28);
+  vram_adr(0x0);
+  ppu_on_all();
+}
 
 
 DEF_METASPRITE_2x2(playerRStand, 0xd8, 0);
@@ -105,6 +146,31 @@ const unsigned char* const playerTankSeq[8] = {
   tankSpriteB1,tankSpriteB2
 };
 
+const unsigned char sprPlayer[]={
+  0,-1,0x49,0,
+  8,-1,0x4a,0,
+  0, 7,0x4b,0,
+  8, 7,0x4c,0,
+  128
+};
+
+const unsigned char sprEnemy1[]={
+  0,-1,0x4d,1,
+  8,-1,0x4e,1,
+  0, 7,0x4f,1,
+  8, 7,0x50,1,
+  128
+};
+static int i;
+static unsigned char wait;
+static int iy,dy;
+
+static unsigned char frame_cnt;
+static unsigned char bright;
+
+
+
+const unsigned char* const sprListPlayer[]={ sprPlayer,sprEnemy1};
 
 
 /*{pal:"nes",layout:"nes"}*/
@@ -123,8 +189,92 @@ const char PALETTE[32] = {
 };
 
 
+void pal_fade_to(unsigned to)
+{
+  if(!to) {}
 
-void show_title_screen(const byte* pal, const byte* rle) {
+  while(bright!=to)
+  {
+    delay(4);
+    if(bright<to) ++bright; else --bright;
+    pal_bright(bright);
+  }
+
+  if(!bright)
+  {
+    ppu_off();
+    set_vram_update(NULL);
+    scroll(0,0);
+  }
+}
+
+void title_screen(void)
+{
+  scroll(-8,240);//title is aligned to the color attributes, so shift it a bit to the right
+
+  vram_adr(NAMETABLE_A);
+  vram_unrle(Tanktitles);
+
+  vram_adr(NAMETABLE_C);//clear second nametable, as it is visible in the jumping effect
+  vram_fill(0,1024);
+
+  pal_bg(palTitle);
+  pal_bright(4);
+  ppu_on_bg();
+  delay(20);//delay just to make it look better
+
+  iy=240<<FP_BITS;
+  dy=-8<<FP_BITS;
+  frame_cnt=0;
+  wait=160;
+  bright= 4;
+
+  while(1)
+  {
+    ppu_wait_frame();
+
+    scroll(2,iy>>FP_BITS);
+
+    if(pad_trigger(0)&PAD_START) break;
+
+    iy+=dy;
+
+    if(iy<0)
+    {
+      iy=0;
+      dy=-dy>>1;
+    }
+
+    if(dy>(-8<<FP_BITS)) dy-=2;
+
+    if(wait)
+    {
+      --wait;
+    }
+    else
+    {
+      pal_col(2,(frame_cnt&32)?0x09:0x1B);//blinking press start text
+      ++frame_cnt;
+    }
+  }
+
+  scroll(-8,0);//if start is pressed, show the title at whole
+  //sfx_play(SFX_START,0);
+
+  for(i=0;i<16;++i)//and blink the text faster
+  {
+    pal_col(2,i&1?0x0f:0x20);
+    delay(4);
+  }
+
+  pal_fade_to(0);
+ 
+}
+
+
+
+
+void show_game_screen(const byte* pal, const byte* rle) {
   // disable rendering
   byte vb;
   ppu_off();
@@ -176,16 +326,19 @@ void main()
   // print instructions
 
   // setup graphics
-  setup_graphics();
+  //setup_graphics();
    for (i=0; i<NUM_ACTORS; i++) {
     actor_x[i] = i*32+128;
     actor_y[i] = i*8+64;
     actor_dx[i] = 0;
     actor_dy[i] = 0;
   }
+  title_screen();
+ 
+  setup_graphics();
   // draw message  
   // enable rendering
-   show_title_screen(climbr_titles_pal, tankgames_rle);
+   show_game_screen(climbr_titles_pal, tankgames_rle);
   // infinite loop
   while(1) {
    // start with OAMid/sprite 0
@@ -219,4 +372,5 @@ void main()
     ppu_wait_frame();
   }
 }
+
 
