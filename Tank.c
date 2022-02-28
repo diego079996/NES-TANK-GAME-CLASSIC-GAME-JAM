@@ -58,23 +58,6 @@ extern const byte tankgames_rle[];
 #define DIR_DOWN    PAD_DOWN
 
 
-#define DEF_METASPRITE_2x2(name,code,pal)\
-const unsigned char name[]={\
-        0,      0,      (code)+37,   pal, \
-        0,      8,      (code)+37,   pal, \
-        8,      0,      (code)+37,   pal, \
-        8,      8,      (code)+37,   pal, \
-        128};
-
-// define a 2x2 metasprite, flipped horizontally
-#define DEF_METASPRITE_2x2_FLIP(name,code,pal)\
-const unsigned char name[]={\
-        8,      0,      (code)+37,   (pal)|OAM_FLIP_H, \
-        8,      8,      (code)+37,   (pal)|OAM_FLIP_H, \
-        0,      0,      (code)+37,   (pal)|OAM_FLIP_H, \
-        0,      8,      (code)+37,   (pal)|OAM_FLIP_H, \
-        128};
-
 
 #define DEF_METASPRITE_TANK_H(name,code1,code2,flip)\
 const unsigned char name[]={\
@@ -102,32 +85,7 @@ void clrscr() {
 }
 
 
-DEF_METASPRITE_2x2(playerRStand, 0xd8, 0);
-DEF_METASPRITE_2x2(playerRRun1, 0xdc, 0);
-DEF_METASPRITE_2x2(playerRRun2, 0xe0, 0);
-DEF_METASPRITE_2x2(playerRRun3, 0xe4, 0);
-DEF_METASPRITE_2x2(playerRJump, 0xe8, 0);
-DEF_METASPRITE_2x2(playerRClimb, 0xec, 0);
-DEF_METASPRITE_2x2(playerRSad, 0xf0, 0);
 
-DEF_METASPRITE_2x2_FLIP(playerLStand, 0xd8, 0);
-DEF_METASPRITE_2x2_FLIP(playerLRun1, 0xdc, 0);
-DEF_METASPRITE_2x2_FLIP(playerLRun2, 0xe0, 0);
-DEF_METASPRITE_2x2_FLIP(playerLRun3, 0xe4, 0);
-DEF_METASPRITE_2x2_FLIP(playerLJump, 0xe8, 0);
-DEF_METASPRITE_2x2_FLIP(playerLClimb, 0xec, 0);
-DEF_METASPRITE_2x2_FLIP(playerLSad, 0xf0, 0);
-
-DEF_METASPRITE_2x2(personToSave, 0xba, 1);
-
-const unsigned char* const playerRunSeq[16] = {
-  playerLRun1, playerLRun2, playerLRun3, 
-  playerLRun1, playerLRun2, playerLRun3, 
-  playerLRun1, playerLRun2,
-  playerRRun1, playerRRun2, playerRRun3, 
-  playerRRun1, playerRRun2, playerRRun3, 
-  playerRRun1, playerRRun2,
-};
 
 DEF_METASPRITE_TANK_H(tankSpriteR1,0xd8,0xd9,0);
 DEF_METASPRITE_TANK_H(tankSpriteR2,0xda,0xdb,0);
@@ -139,11 +97,11 @@ DEF_METASPRITE_TANK_V(tankSpriteT2,0xde,0xdf,0);
 DEF_METASPRITE_TANK_V(tankSpriteB1,0xdd,0xdc,1);
 DEF_METASPRITE_TANK_V(tankSpriteB2,0xdf,0xde,1);
 
-const unsigned char* const playerTankSeq[8] = {
-  tankSpriteR1,tankSpriteR2,
+const unsigned char* const playerTankSeq[12] = {
+  tankSpriteB1,tankSpriteB2,
   tankSpriteL1,tankSpriteL2,
   tankSpriteT1,tankSpriteT2,
-  tankSpriteB1,tankSpriteB2
+  tankSpriteR1,tankSpriteR2
 };
 
 const unsigned char sprPlayer[]={
@@ -233,7 +191,7 @@ void title_screen(void)
   {
     ppu_wait_frame();
 
-    scroll(2,iy>>FP_BITS);
+    scroll(0,iy>>FP_BITS);
 
     if(pad_trigger(0)&PAD_START) break;
 
@@ -318,18 +276,15 @@ sbyte actor_dy[NUM_ACTORS];
 void main()
 {
   char i;	// actor index
-  //char j;     // actor 2 index
   char oam_id;// sprite ID
-  //char oam_id2;
   char pad;	// controller flags
   
   // print instructions
 
-  // setup graphics
-  //setup_graphics();
+ 
    for (i=0; i<NUM_ACTORS; i++) {
-    actor_x[i] = i*32+128;
-    actor_y[i] = i*8+64;
+    actor_x[i] = i*98;
+    actor_y[i] = i*64;
     actor_dx[i] = 0;
     actor_dy[i] = 0;
   }
@@ -348,19 +303,46 @@ void main()
       // poll controller i (0-1)
       pad = pad_poll(i);
       // move actor[i] left/right
-      if (pad&PAD_LEFT && actor_x[i]>0) actor_dx[i]=-2;
-      else if (pad&PAD_RIGHT && actor_x[i]<240) actor_dx[i]=2;
+      if(pad&PAD_LEFT && pad&PAD_DOWN){
+        actor_dx[i]=0;
+        actor_dy[i]=0;}
+      if(pad&PAD_RIGHT && pad&PAD_DOWN){
+        actor_dx[i]=0;
+        actor_dy[i]=0;}
+      if (pad&PAD_LEFT && actor_x[i]>32){
+        
+        if(pad&PAD_LEFT && actor_y[i]<61 && actor_y[i]>32) actor_dx[i]=0;
+        else if(pad&PAD_LEFT && actor_y[i]<93 && actor_y[i]>65) actor_dx[i]=0;
+        else if(pad&PAD_LEFT && actor_y[i]<125 && actor_y[i]>98) actor_dx[i]=0;
+        else if(pad&PAD_LEFT && actor_y[i]<157 && actor_y[i]>128) actor_dx[i]=0;
+        else if(pad&PAD_LEFT && actor_y[i]<189 && actor_y[i]>158) actor_dx[i]=0;
+        else actor_dx[i]=-1;
+      }
+      else if (pad&PAD_RIGHT && actor_x[i]<207){
+        if(pad&PAD_RIGHT && actor_y[i]<61 && actor_y[i]>32)actor_dx[i]=0;
+        else if(pad&PAD_RIGHT && actor_y[i]<93 && actor_y[i]>63) actor_dx[i]=0;
+        else if(pad&PAD_RIGHT && actor_y[i]<125 && actor_y[i]>98) actor_dx[i]=0;
+        else if(pad&PAD_RIGHT && actor_y[i]<157 && actor_y[i]>125) actor_dx[i]=0;
+        else if(pad&PAD_RIGHT && actor_y[i]<190 && actor_y[i]>158) actor_dx[i]=0;
+        else actor_dx[i]=1;
+      }
       else actor_dx[i]=0;
       // move actor[i] up/down
-      if (pad&PAD_UP && actor_y[i]>0) actor_dy[i]=-2;
-      else if (pad&PAD_DOWN && actor_y[i]<212) actor_dy[i]=2;
+      if (pad&PAD_UP && actor_y[i]>30){
+        if(pad&PAD_UP && actor_x[i]<206 && actor_x[i]>34)actor_dy[i]=0;
+        else actor_dy[i]=-1;
+      }
+      else if (pad&PAD_DOWN && actor_y[i]<190){
+        if(pad&PAD_DOWN && actor_x[i]<206 && actor_x[i]>34)actor_dy[i]=0;
+        else actor_dy[i]=1;
+      }
       else actor_dy[i]=0;
     }
     // draw and move all actors
     for (i=0; i<NUM_ACTORS; i++) {
-      byte runseq = actor_x[i] & 6;
+      byte runseq = actor_x[i] & 4;
       if (actor_dx[i] >= 0)
-        runseq += 1;
+        runseq += 2;
       oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, playerTankSeq[runseq]);
       actor_x[i] += actor_dx[i];
       actor_y[i] += actor_dy[i];
