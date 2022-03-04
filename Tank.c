@@ -1,4 +1,6 @@
 
+//#link "char_generic.s"
+
 #include "Tanktitles.h"
 
 //#link "tankgame.s"
@@ -27,6 +29,30 @@ const unsigned char palTitle[16]={ 0x0f,0x08,0x1A,0x2A,0x0f,0x08,0x1a,0x2a,0x0f,
 
 extern const byte climbr_titles_pal[16];
 extern const byte tankgames_rle[];
+
+
+#define NSPRITES 8	// max number of sprites
+#define NMISSILES 8	// max number of missiles
+#define YOFFSCREEN 240	// offscreen y position (hidden)
+#define BOOMSPRITE 6	// explosion sprite
+// sprite indexes
+#define PLYRMISSILE 7	// player missile
+#define PLYRSPRITE 7	// player sprite
+
+#define COLOR_PLAYER		3
+#define COLOR_FORMATION		1
+#define COLOR_ATTACKER		1
+#define COLOR_MISSILE		3
+#define COLOR_BOMB		2
+#define COLOR_SCORE		2
+#define COLOR_EXPLOSION		3
+
+// nametable entries
+#define NAME_SHIP	96
+#define NAME_MISSILE	100
+#define NAME_BOMB	104
+#define NAME_EXPLODE	112
+#define NAME_ENEMY	68
 
 #define BLANK 0
 
@@ -57,7 +83,7 @@ extern const byte tankgames_rle[];
 #define DIR_UP      PAD_UP
 #define DIR_DOWN    PAD_DOWN
 
-
+#define CHAR(x) ((x)-' ')
 
 #define DEF_METASPRITE_TANK_H(name,code1,code2,flip)\
 const unsigned char name[]={\
@@ -75,6 +101,28 @@ const unsigned char name[]={\
         8,0,(code2),(flip<<7)|OAM_FLIP_H,\
         128};
 
+
+char in_rect(byte x, byte y, byte x0, byte y0, byte w, byte h) {
+  return ((byte)(x-x0) < w && (byte)(y-y0) < h); // unsigned
+}
+void draw_bcd_word(byte col, byte row, word bcd) {
+  byte j;
+  static char buf[5];
+  buf[4] = CHAR('0');
+  for (j=3; j<0x80; j--) {
+    buf[j] = CHAR('0'+(bcd&0xf));
+    bcd >>= 4;
+  }
+  vrambuf_put(NTADR_A(col, row), buf, 5);
+}
+
+typedef struct {
+  byte xpos;
+  byte ypos;
+  signed char dx;
+  signed char dy;
+} Missile;
+
 void clrscr() {
   vrambuf_clear();
   ppu_off();
@@ -85,7 +133,7 @@ void clrscr() {
 }
 
 
-
+Missile missiles[NMISSILES];
 
 DEF_METASPRITE_TANK_H(tankSpriteR1,0xd8,0xd9,0);
 DEF_METASPRITE_TANK_H(tankSpriteR2,0xda,0xdb,0);
@@ -97,11 +145,24 @@ DEF_METASPRITE_TANK_V(tankSpriteT2,0xde,0xdf,0);
 DEF_METASPRITE_TANK_V(tankSpriteB1,0xdd,0xdc,1);
 DEF_METASPRITE_TANK_V(tankSpriteB2,0xdf,0xde,1);
 
-const unsigned char* const playerTankSeq[12] = {
-  tankSpriteB1,tankSpriteB2,
+const unsigned char* const playerTankSeq[8] = {
+ 
+ 
+
+ 
   tankSpriteL1,tankSpriteL2,
+  tankSpriteR1,tankSpriteR2,
   tankSpriteT1,tankSpriteT2,
-  tankSpriteR1,tankSpriteR2
+  tankSpriteB1,tankSpriteB2
+};
+
+const unsigned char* const playerTankSeq1[8] = {
+ 
+ 
+  tankSpriteL1,tankSpriteL2,
+  tankSpriteR1,tankSpriteR2,
+  tankSpriteT1,tankSpriteT2,
+  tankSpriteB1,tankSpriteB2
 };
 
 const unsigned char sprPlayer[]={
@@ -145,6 +206,23 @@ const char PALETTE[32] = {
   0x0d,0x2d,0x3a,0x0,	// sprite palette 2
   0x0d,0x27,0x2a	// sprite palette 3
 };
+
+void move_missiles() {
+  byte i;
+  for (i=0; i<8; i++) { 
+    if (missiles[i].ypos != YOFFSCREEN) {
+      // hit the bottom or top?
+      if ((byte)(missiles[i].ypos += missiles[i].dy) > YOFFSCREEN) {
+        missiles[i].ypos = YOFFSCREEN;
+      }
+    }
+  }
+}
+
+
+void hide_player_missile() {
+  missiles[PLYRMISSILE].ypos = YOFFSCREEN;
+}
 
 
 void pal_fade_to(unsigned to)
@@ -256,6 +334,7 @@ void show_game_screen(const byte* pal, const byte* rle) {
   }
 }
 
+
 // setup PPU and tables
 void setup_graphics() {
   // clear sprites
@@ -270,24 +349,28 @@ void setup_graphics() {
 // actor x/y positions
 byte actor_x[NUM_ACTORS];
 byte actor_y[NUM_ACTORS];
+
 // actor x/y deltas per frame (signed)
 sbyte actor_dx[NUM_ACTORS];
 sbyte actor_dy[NUM_ACTORS];
+
 void main()
 {
   char i;	// actor index
   char oam_id;// sprite ID
+  
   char pad;	// controller flags
   
   // print instructions
 
  
    for (i=0; i<NUM_ACTORS; i++) {
-    actor_x[i] = i*98;
-    actor_y[i] = i*64;
+    actor_x[i] = i*32+128;
+    actor_y[i] = i*128+64;
     actor_dx[i] = 0;
     actor_dy[i] = 0;
   }
+  
   title_screen();
  
   setup_graphics();
@@ -298,9 +381,14 @@ void main()
   while(1) {
    // start with OAMid/sprite 0
     oam_id = 0;
+    move_missiles();
+    
     // set player 0/1 velocity based on controller
     for (i=0; i<2; i++) {
       // poll controller i (0-1)
+      
+      
+      
       pad = pad_poll(i);
       // move actor[i] left/right
       if(pad&PAD_LEFT && pad&PAD_DOWN){
@@ -338,9 +426,20 @@ void main()
       }
       else actor_dy[i]=0;
     }
-    // draw and move all actors
+     // draw and move all actors
     for (i=0; i<NUM_ACTORS; i++) {
-      byte runseq = actor_x[i] & 4;
+      byte runseq = actor_x[i] & 1;
+       Missile* mis = &missiles[i];
+    
+      
+      if ((pad & PAD_A) /*&& missiles[PLYRMISSILE].ypos == YOFFSCREEN*/) {
+        oam_id = oam_spr(mis->xpos, mis->ypos, NAME_MISSILE,
+                          (i==7)?COLOR_MISSILE:COLOR_BOMB,
+                          oam_id);
+        missiles[NUM_ACTORS].ypos = actor_y[i]-8; // must be multiple of missile speed
+        missiles[PLYRMISSILE].xpos = actor_x[i]+4; // player X position
+        missiles[PLYRMISSILE].dy = -4; // player missile speed
+       }
       if (actor_dx[i] >= 0)
         runseq += 2;
       oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, playerTankSeq[runseq]);
