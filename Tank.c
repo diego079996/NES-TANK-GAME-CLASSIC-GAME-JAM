@@ -389,8 +389,8 @@ void main()
         actor_dx[i]=0;
         actor_dy[i]=0;}
       if (pad&PAD_LEFT && actor_x[i]>32){
-        APU_TRIANGLE_LENGTH(2000,3);
-        
+        APU_TRIANGLE_LENGTH(500,9);
+        APU_NOISE_DECAY(15,6,12);
         if(pad&PAD_LEFT && actor_y[i]<61 && actor_y[i]>32) actor_dx[i]=0;
         else if(pad&PAD_LEFT && actor_y[i]<93 && actor_y[i]>65) actor_dx[i]=0;
         else if(pad&PAD_LEFT && actor_y[i]<125 && actor_y[i]>98) actor_dx[i]=0;
