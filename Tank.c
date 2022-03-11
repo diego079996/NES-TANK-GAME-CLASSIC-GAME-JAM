@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "apu.h"
+//#link "apu.c"
+
 // include NESLIB header
 #include "neslib.h"
 
@@ -146,19 +149,7 @@ DEF_METASPRITE_TANK_V(tankSpriteB1,0xdd,0xdc,1);
 DEF_METASPRITE_TANK_V(tankSpriteB2,0xdf,0xde,1);
 
 const unsigned char* const playerTankSeq[8] = {
- 
- 
-
- 
-  tankSpriteL1,tankSpriteL2,
-  tankSpriteR1,tankSpriteR2,
-  tankSpriteT1,tankSpriteT2,
-  tankSpriteB1,tankSpriteB2
-};
-
-const unsigned char* const playerTankSeq1[8] = {
- 
- 
+  
   tankSpriteL1,tankSpriteL2,
   tankSpriteR1,tankSpriteR2,
   tankSpriteT1,tankSpriteT2,
@@ -294,7 +285,7 @@ void title_screen(void)
     }
   }
 
-  scroll(-8,0);//if start is pressed, show the title at whole
+  //scroll(-8,0);//if start is pressed, show the title at whole
   //sfx_play(SFX_START,0);
 
   for(i=0;i<16;++i)//and blink the text faster
@@ -360,7 +351,7 @@ void main()
   char oam_id;// sprite ID
   
   char pad;	// controller flags
-  
+  apu_init();
   // print instructions
 
  
@@ -381,7 +372,7 @@ void main()
   while(1) {
    // start with OAMid/sprite 0
     oam_id = 0;
-    move_missiles();
+    //move_missiles();
     
     // set player 0/1 velocity based on controller
     for (i=0; i<2; i++) {
@@ -398,6 +389,7 @@ void main()
         actor_dx[i]=0;
         actor_dy[i]=0;}
       if (pad&PAD_LEFT && actor_x[i]>32){
+        APU_TRIANGLE_LENGTH(2000,3);
         
         if(pad&PAD_LEFT && actor_y[i]<61 && actor_y[i]>32) actor_dx[i]=0;
         else if(pad&PAD_LEFT && actor_y[i]<93 && actor_y[i]>65) actor_dx[i]=0;
@@ -407,6 +399,7 @@ void main()
         else actor_dx[i]=-1;
       }
       else if (pad&PAD_RIGHT && actor_x[i]<207){
+        APU_TRIANGLE_LENGTH(2000,3);
         if(pad&PAD_RIGHT && actor_y[i]<61 && actor_y[i]>32)actor_dx[i]=0;
         else if(pad&PAD_RIGHT && actor_y[i]<93 && actor_y[i]>63) actor_dx[i]=0;
         else if(pad&PAD_RIGHT && actor_y[i]<125 && actor_y[i]>98) actor_dx[i]=0;
@@ -417,10 +410,12 @@ void main()
       else actor_dx[i]=0;
       // move actor[i] up/down
       if (pad&PAD_UP && actor_y[i]>30){
+        APU_TRIANGLE_LENGTH(1900,3);
         if(pad&PAD_UP && actor_x[i]<206 && actor_x[i]>34)actor_dy[i]=0;
         else actor_dy[i]=-1;
       }
       else if (pad&PAD_DOWN && actor_y[i]<190){
+        APU_TRIANGLE_LENGTH(1900,3);
         if(pad&PAD_DOWN && actor_x[i]<206 && actor_x[i]>34)actor_dy[i]=0;
         else actor_dy[i]=1;
       }
@@ -429,10 +424,10 @@ void main()
      // draw and move all actors
     for (i=0; i<NUM_ACTORS; i++) {
       byte runseq = actor_x[i] & 1;
-       Missile* mis = &missiles[i];
+      // Missile* mis = &missiles[i];
     
-      
-      if ((pad & PAD_A) /*&& missiles[PLYRMISSILE].ypos == YOFFSCREEN*/) {
+     /* 
+      if ((pad & PAD_A) && missiles[PLYRMISSILE].ypos == YOFFSCREEN) {
         oam_id = oam_spr(mis->xpos, mis->ypos, NAME_MISSILE,
                           (i==7)?COLOR_MISSILE:COLOR_BOMB,
                           oam_id);
@@ -440,6 +435,7 @@ void main()
         missiles[PLYRMISSILE].xpos = actor_x[i]+4; // player X position
         missiles[PLYRMISSILE].dy = -4; // player missile speed
        }
+      */
       if (actor_dx[i] >= 0)
         runseq += 2;
       oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, playerTankSeq[runseq]);
