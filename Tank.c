@@ -399,7 +399,8 @@ void main()
         else actor_dx[i]=-1;
       }
       else if (pad&PAD_RIGHT && actor_x[i]<207){
-        APU_TRIANGLE_LENGTH(2000,3);
+        APU_TRIANGLE_LENGTH(500,9);
+        APU_NOISE_DECAY(15,6,12);
         if(pad&PAD_RIGHT && actor_y[i]<61 && actor_y[i]>32)actor_dx[i]=0;
         else if(pad&PAD_RIGHT && actor_y[i]<93 && actor_y[i]>63) actor_dx[i]=0;
         else if(pad&PAD_RIGHT && actor_y[i]<125 && actor_y[i]>98) actor_dx[i]=0;
@@ -410,12 +411,14 @@ void main()
       else actor_dx[i]=0;
       // move actor[i] up/down
       if (pad&PAD_UP && actor_y[i]>30){
-        APU_TRIANGLE_LENGTH(1900,3);
+        APU_TRIANGLE_LENGTH(500,9);
+        APU_NOISE_DECAY(15,6,12);
         if(pad&PAD_UP && actor_x[i]<206 && actor_x[i]>34)actor_dy[i]=0;
         else actor_dy[i]=-1;
       }
       else if (pad&PAD_DOWN && actor_y[i]<190){
-        APU_TRIANGLE_LENGTH(1900,3);
+        APU_TRIANGLE_LENGTH(500,9);
+        APU_NOISE_DECAY(15,6,12);
         if(pad&PAD_DOWN && actor_x[i]<206 && actor_x[i]>34)actor_dy[i]=0;
         else actor_dy[i]=1;
       }
