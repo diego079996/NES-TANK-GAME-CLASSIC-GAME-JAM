@@ -340,10 +340,12 @@ void setup_graphics() {
 // actor x/y positions
 byte actor_x[NUM_ACTORS];
 byte actor_y[NUM_ACTORS];
+byte actor_state[NUM_ACTORS];
 
 // actor x/y deltas per frame (signed)
 sbyte actor_dx[NUM_ACTORS];
 sbyte actor_dy[NUM_ACTORS];
+
 
 void main()
 {
@@ -396,7 +398,7 @@ void main()
         else if(pad&PAD_LEFT && actor_y[i]<125 && actor_y[i]>98) actor_dx[i]=0;
         else if(pad&PAD_LEFT && actor_y[i]<157 && actor_y[i]>128) actor_dx[i]=0;
         else if(pad&PAD_LEFT && actor_y[i]<189 && actor_y[i]>158) actor_dx[i]=0;
-        else actor_dx[i]=-1;
+        else{ actor_dx[i]=-1; actor_state[i]=0;}
       }
       else if (pad&PAD_RIGHT && actor_x[i]<207){
         APU_TRIANGLE_LENGTH(500,9);
@@ -406,7 +408,7 @@ void main()
         else if(pad&PAD_RIGHT && actor_y[i]<125 && actor_y[i]>98) actor_dx[i]=0;
         else if(pad&PAD_RIGHT && actor_y[i]<157 && actor_y[i]>125) actor_dx[i]=0;
         else if(pad&PAD_RIGHT && actor_y[i]<190 && actor_y[i]>158) actor_dx[i]=0;
-        else actor_dx[i]=1;
+        else{ actor_dx[i]=1; actor_state[i]=2;}
       }
       else actor_dx[i]=0;
       // move actor[i] up/down
@@ -414,13 +416,13 @@ void main()
         APU_TRIANGLE_LENGTH(500,9);
         APU_NOISE_DECAY(15,6,12);
         if(pad&PAD_UP && actor_x[i]<206 && actor_x[i]>34)actor_dy[i]=0;
-        else actor_dy[i]=-1;
+        else{ actor_dy[i]=-1; actor_state[i]=4;}
       }
       else if (pad&PAD_DOWN && actor_y[i]<190){
         APU_TRIANGLE_LENGTH(500,9);
         APU_NOISE_DECAY(15,6,12);
         if(pad&PAD_DOWN && actor_x[i]<206 && actor_x[i]>34)actor_dy[i]=0;
-        else actor_dy[i]=1;
+        else{ actor_dy[i]=1; actor_state[i]=6;}
       }
       else actor_dy[i]=0;
     }
@@ -441,7 +443,7 @@ void main()
       */
       if (actor_dx[i] >= 0)
         runseq += 2;
-      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, playerTankSeq[runseq]);
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, playerTankSeq[actor_state[i]]);
       actor_x[i] += actor_dx[i];
       actor_y[i] += actor_dy[i];
     }
